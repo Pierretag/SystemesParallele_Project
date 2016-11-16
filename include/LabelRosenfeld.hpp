@@ -6,6 +6,7 @@
 #include <iostream>
 #include <stdint.h>
 #include <vector>
+#include <stdlib.h>
 #include <omp.h>
 using namespace std;
 
@@ -40,7 +41,8 @@ public :
 
     /* Destructeur par defaut */
     ~LabelRosenfeld();
-
+    void joinTabs(unsigned char **X, int i0,int i1, uint32_t **E,uint32_t* tab1,uint32_t* tab2,int largeur,uint32_t n1,uint32_t n2);
+    uint32_t reDoLabel(int i, uint32_t **E, uint32_t* T, int largeur);
     /* Labelise en sequentiel*/
     void labeliseSequetiel4C(Region32& region32);
     void labeliseSequetiel8C(Region32& region32);

@@ -303,7 +303,6 @@ uint32_t LabelRosenfeld::lineLabeling8C(unsigned char **X, int i, uint32_t **E, 
 }
 
 
-
 /* Labelise en sequentiel */
 void LabelRosenfeld::labeliseSequetiel4C(Region32& region32) {
 
@@ -368,18 +367,65 @@ void LabelRosenfeld::labeliseSequetiel8C(Region32& region32) {
     region32.ne = ne;
 }
 
+void LabelRosenfeld::joinTabs(unsigned char **X, int i0,int i1, uint32_t **E,uint32_t* tab1,uint32_t* tab2,int largeur,uint32_t n1,uint32_t n2){
 
 
+  int i;
+  int j;
+  int e0,e2;
+  for(i=0;i<n2;i++){
+    tab1[n1+i] = tab2[i]+n1;
+  }
+
+  for(i=i0;i<i1;i++){
+    for(j=0;j<largeur;j++){
+      e0 = E[i][j];
+      if(e0 != 0 ) E[i][j] = tab1[n1+e0];
+    }
+  }
+}
+uint32_t LabelRosenfeld::reDoLabel(int i, uint32_t **E, uint32_t* T, int largeur) {
+  int j;
+  int eSup;
+  int e;
+  int r2,r4;
+  int epsillon;
+  for(j=0;j<largeur;j++){
+    eSup = E[i-1][j];
+    e = E[i][j];
+
+    if(e == 0 || eSup == 0 ){
+
+    }else{
+      if(e!=eSup){
+        r2 = FindRoot(T, e);
+        r4 = FindRoot(T, eSup);
+        epsillon = ui32MinNonNul2(r2, r4);
+
+        if ((e) && (e != epsillon)) SetRoot(T, e, epsillon);
+        if ((eSup) && (eSup != epsillon)) SetRoot(T, eSup, epsillon);
+        E[i][j] = epsillon;
+
+      }
+    }
+  }
+
+
+
+
+}
 
 /* Labelise en parall�le */
 void LabelRosenfeld::labeliseParallele4C(Region32& region32) {
   /* Declaration des variables */
   int i,j;
   int nbThreads = region32.np;
-  uint32_t ne[nbThreads];
-  int i0n[nbThreads];
+  uint32_t* ne = new uint32_t[nbThreads];
+  int* i0n = new int[nbThreads];
+  int* i1n= new int[nbThreads];
+
+  for(i=0;i<nbThreads;i++) ne[i] =0;
   for(i=0;i<nbThreads;i++) i0n[i]=region32.Regions[i].i0;
-  int i1n[nbThreads];
   for(i=0;i<nbThreads;i++) i1n[i]=region32.Regions[i].i1;
 
   int i0 			= 	region32.i0;
@@ -396,30 +442,34 @@ void LabelRosenfeld::labeliseParallele4C(Region32& region32) {
 
   for(i=0;i<nbThreads;i++){
     ne[i] = 0;
-    ne[i] = line0Labeling4C(region32.Regions[i].X, region32.Regions[i].i0, region32.Regions[i].E, region32.Regions[i].T, largeur, ne[i]);
+    ne[i] = line0Labeling4C(region32.X, i0n[i], region32.E, region32.Regions[i].T, largeur, ne[i]);
   }
 
-#pragma omp parallel for private(i,j)
+//#pragma omp parallel for private(i,j)
 for(j=0;j<nbThreads;j++){
-
     for (i=i0n[j]+1; i<i1n[j]; i++) {
-      ne[j] = lineLabeling4C(region32.Regions[j].X, i, region32.Regions[j].E, region32.Regions[j].T, largeur, ne[j]);
-
+      //if((i%100) == 0) cout<<"num thread "<<j << " num ligne "<<i<<endl;
+      ne[j] = lineLabeling4C(region32.X, i, region32.E, region32.Regions[j].T, largeur, ne[j]);
     }
 }
 
-//  for(i=0;i<nbThreads;i++) region32.neFinal = solvePackTable(region32.Regions[i].T, ne[i]);
-  /* R�solution des �quivalences */
-  //region32.neFinal = solvePackTable(region32.T, ne);
+// jointure des tableaux d'équivalences
 
-  /* Mise � jour sur l'image */
-  #pragma  omp parallel
-  {
-  //  updateLabel(region32.E, i0, i1, j0, j1, region32.T);
+  joinTabs(region32.X,i0n[0],i1n[0],region32.E,region32.T,region32.Regions[0].T,largeur,0,ne[0]);
+  for(i=1;i<nbThreads;i++){
+    joinTabs(region32.X,i0n[i],i1n[i],region32.E,region32.T,region32.Regions[i].T,largeur,ne[0],ne[i]);
+    ne[0] = ne[0] + ne[i];
   }
 
+  for(i=1;i<nbThreads;i++){
+    reDoLabel(i0n[i],region32.E,region32.T,largeur);
+  }
+
+  region32.neFinal = solvePackTable(region32.T, ne[0]);
+  updateLabel(region32.E, i0, i1, j0, j1, region32.T);
+
   /* M�morisation du nombre d'�tiquettes */
-  //region32.ne = ne[1]+ne[2]+ne[3]+ne[4];
+  region32.ne = ne[0];
 
 }
 
