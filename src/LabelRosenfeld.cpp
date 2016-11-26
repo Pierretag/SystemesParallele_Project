@@ -302,6 +302,15 @@ uint32_t LabelRosenfeld::lineLabeling8C(unsigned char **X, int i, uint32_t **E, 
     return ne;
 }
 
+void LabelRosenfeld::updateLabelP(uint32_t **E, int i0, int i1, int j0, int j1, uint32_t* T) {
+    int i, j;
+    #pragma omp parallel for private(i,j)
+    for (i=i0; i<i1; i++) {
+        for (j=j0; j<j1; j++) {
+            E[i][j] = T[E[i][j]];
+        }
+    }
+}
 
 /* Labelise en sequentiel */
 void LabelRosenfeld::labeliseSequetiel4C(Region32& region32) {
@@ -437,21 +446,15 @@ void LabelRosenfeld::labeliseParallele4C(Region32& region32) {
   /* Netoyage des pr�c�dents traitements */
   region32.cleanRegions32();
 
-  /* Premier etiquetage */
-
-
-  for(i=0;i<nbThreads;i++){
-    ne[i] = 0;
-    ne[i] = line0Labeling4C(region32.X, i0n[i], region32.E, region32.Regions[i].T, largeur, ne[i]);
-  }
-
-//#pragma omp parallel for private(i,j)
+#pragma omp parallel for private(i,j)
 for(j=0;j<nbThreads;j++){
+  ne[j] = 0;
+  ne[j] = line0Labeling4C(region32.X, i0n[j], region32.E, region32.Regions[j].T, largeur, ne[j]);
     for (i=i0n[j]+1; i<i1n[j]; i++) {
-      //if((i%100) == 0) cout<<"num thread "<<j << " num ligne "<<i<<endl;
       ne[j] = lineLabeling4C(region32.X, i, region32.E, region32.Regions[j].T, largeur, ne[j]);
     }
 }
+
 
 // jointure des tableaux d'équivalences
 
@@ -465,9 +468,10 @@ for(j=0;j<nbThreads;j++){
     reDoLabel(i0n[i],region32.E,region32.T,largeur);
   }
 
-  region32.neFinal = solvePackTable(region32.T, ne[0]);
-  updateLabel(region32.E, i0, i1, j0, j1, region32.T);
 
+  region32.neFinal = solvePackTable(region32.T, ne[0]);
+
+    updateLabelP(region32.E, i0, i1, j0, j1, region32.T);
   /* M�morisation du nombre d'�tiquettes */
   region32.ne = ne[0];
 

@@ -13,6 +13,7 @@ using namespace std;
 class LabelRosenfeld {
 protected :
 
+
     /* Fonctions communes */
     uint32_t FindRoot(uint32_t* T, uint32_t i);
     void SetRoot(uint32_t* T, uint32_t i, uint32_t r);
