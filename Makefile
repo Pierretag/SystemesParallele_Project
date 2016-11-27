@@ -4,7 +4,7 @@
 
 # -- Lile list ----------
 FILE =  Region32.cpp ImageEtiquette.cpp LabelRosenfeld.cpp main.cpp
-C_OPTION = #-fopenmp ou -pthreads etc etc
+C_OPTION = -fopenmp
 
 # -- Paths ----------
 SRC_PATH = src
@@ -23,12 +23,13 @@ CC = g++
 
 # -- Flags ----------
 C_DEBUG_FLAGS = -O0
+C_DEBUG = -g
 C_OPTIMISATION_FLAGS = -O3
 C_ARCH_FLAGS =
 C_OS_FLAGS = -D$(OS)
 C_INC_FLAGS = -I$(INC_PATH)
 
-CFLAGS = $(C_OPTION) $(C_OPTIMISATION_FLAGS) $(C_ARCH_FLAGS) $(C_OS_FLAGS) $(C_INC_FLAGS) $(LIB_INC_PATH)
+CFLAGS = $(C_OPTION) $(C_OPTIMISATION_FLAGS) $(C_ARCH_FLAGS) $(C_OS_FLAGS) $(C_INC_FLAGS) $(LIB_INC_PATH) $(C_DEBUG)
 LDFLAGS = $(C_OPTION) $(C_OPTIMISATION_FLAGS) $(C_ARCH_FLAGS) $(C_OS_FLAGS) $(C_INC_FLAGS) $(LIB_LIB_PATH)
 
 # -- Final product ----------
